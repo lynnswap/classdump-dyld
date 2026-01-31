@@ -477,10 +477,14 @@ int parseImage(char *image,BOOL writeToDisk,NSString *outputDir,BOOL getSymbols,
                 if (totalClasses>0){
                     Class *classes=(Class *)malloc(sizeof(Class)*totalClasses);
                     int actualClasses=objc_getClassList(classes,totalClasses);
-                    if (actualClasses>0){
-                        const char **fallbackNames=(const char **)malloc(sizeof(char *)*actualClasses);
+                    int classCount=actualClasses;
+                    if (classCount>totalClasses){
+                        classCount=totalClasses;
+                    }
+                    if (classCount>0){
+                        const char **fallbackNames=(const char **)malloc(sizeof(char *)*classCount);
                         unsigned int fallbackCount=0;
-                        for (int i=0; i<actualClasses; i++){
+                        for (int i=0; i<classCount; i++){
                             const char *classImage=class_getImageName(classes[i]);
                             if (!classImage){
                                 continue;
