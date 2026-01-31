@@ -412,6 +412,10 @@ int parseImage(char *image,BOOL writeToDisk,NSString *outputDir,BOOL getSymbols,
     CDLog(@"Getting class count for %s",image);
     const char **names = objc_copyClassNamesForImage(image,&count);
     if (count == 0) {
+        if (names != NULL){
+            free(names);
+            names = NULL;
+        }
         NSString *imageString=[NSString stringWithCString:image encoding:NSUTF8StringEncoding];
         NSString *lastComponent=[imageString lastPathComponent];
         NSString *parentComponent=[[imageString stringByDeletingLastPathComponent] lastPathComponent];
@@ -425,7 +429,23 @@ int parseImage(char *image,BOOL writeToDisk,NSString *outputDir,BOOL getSymbols,
             }
             NSString *candidateString=[NSString stringWithCString:candidate encoding:NSUTF8StringEncoding];
             if ([candidateString hasSuffix:frameworkSuffix] || [candidateString hasSuffix:imageSuffix]){
-                names = objc_copyClassNamesForImage(candidate,&count);
+                BOOL isForbidden=NO;
+                for (NSString *forbiddenPath in forbiddenPaths){
+                    if ([candidateString rangeOfString:forbiddenPath].location!=NSNotFound){
+                        isForbidden=YES;
+                        break;
+                    }
+                }
+                if (isForbidden){
+                    continue;
+                }
+                const char **candidateNames = objc_copyClassNamesForImage(candidate,&count);
+                if (candidateNames != NULL){
+                    if (names != NULL){
+                        free(names);
+                    }
+                    names = candidateNames;
+                }
                 if (count > 0) {
                     image = (char *)candidate;
                     break;
