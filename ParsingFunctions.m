@@ -1331,12 +1331,19 @@ NSString * generateMethodLines(Class someclass,BOOL isInstanceMethod,NSMutableAr
 						}
 					}
 				}
+				NSString *selectorPart=nil;
+				if ((i - 2) < [selValuesArray count]){
+					selectorPart=[selValuesArray objectAtIndex:i-2];
+				}
+				else{
+					selectorPart=[NSString stringWithFormat:@"arg%d",i-1];
+				}
 				if (methodTypeSameAsProperty){
-					returnString=[[[returnString autorelease] stringByAppendingString:[NSString stringWithFormat:@"%@:(%@)arg%d ",[selValuesArray objectAtIndex:i-2],methodTypeSameAsProperty,i-1]] retain];
+					returnString=[[[returnString autorelease] stringByAppendingString:[NSString stringWithFormat:@"%@:(%@)arg%d ",selectorPart,methodTypeSameAsProperty,i-1]] retain];
 				}
 				else{
 
-					returnString=[[[returnString autorelease] stringByAppendingString:[NSString stringWithFormat:@"%@:(%@)arg%d ",[selValuesArray objectAtIndex:i-2],commonTypes([NSString stringWithCString:methodType encoding:NSUTF8StringEncoding],nil,NO),i-1]] retain];
+					returnString=[[[returnString autorelease] stringByAppendingString:[NSString stringWithFormat:@"%@:(%@)arg%d ",selectorPart,commonTypes([NSString stringWithCString:methodType encoding:NSUTF8StringEncoding],nil,NO),i-1]] retain];
 				}
 				[methodTypeSameAsProperty release];
 				free(methodType);
