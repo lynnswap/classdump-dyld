@@ -21,7 +21,7 @@ BOOL isMachOExecutable(const char *image){
 		return NO;
 	}
 	//#ifdef __LP64__
-	mach_header_64 machHeader;
+	struct mach_header_64 machHeader;
 	//#else
 	//mach_header machHeader;
 	//#endif
@@ -45,7 +45,7 @@ BOOL is64BitMachO(const char *image){
 		fclose(machoFile);
 	 	return NO;
 	}
-	mach_header_64 machHeader;
+	struct mach_header_64 machHeader;
 	int n = fread (&machHeader, sizeof (machHeader), 1, machoFile);
   	if (n != 1){
 
@@ -385,7 +385,9 @@ NSMutableArray * generateForbiddenPathsArray(BOOL isRecursive){
 	// The following paths are skipped for known issues that arise when their symbols are added to the flat namespace
 	
 	[forbiddenPaths addObject:@"/usr/bin"];
-	[forbiddenPaths addObject:@"/Developer"];
+	if (![[[NSProcessInfo processInfo] environment] objectForKey:@"CLASSDUMP_DYLD_ALLOW_DEVELOPER"]) {
+		[forbiddenPaths addObject:@"/Developer"];
+	}
 	[forbiddenPaths addObject:@"/Library/Switches"];
 	[forbiddenPaths addObject:@"SBSettings"];
 	[forbiddenPaths addObject:@"Activator"];
