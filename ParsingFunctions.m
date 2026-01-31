@@ -15,7 +15,7 @@
 
  	while ([text rangeOfString:@"("].location!=NSNotFound){
 		
-		NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"\\(([^\\(\\)]+)\\)" options:nil error:nil];		
+		NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"\\(([^\\(\\)]+)\\)" options:0 error:nil];		
 		
 		// test if the anticipated union (embraced in parentheseis) is actually a function definition rather than a union
 		
@@ -47,7 +47,7 @@
 	if ([text rangeOfString:@"{"].location!=NSNotFound){ 
 	
 		BOOL FOUND=1;
-		NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(?<!\\^)\\{([^\\{^\\}]+)\\}" options:nil error:nil];
+		NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(?<!\\^)\\{([^\\{^\\}]+)\\}" options:0 error:nil];
 		while (FOUND){
 			NSRange range = [regex rangeOfFirstMatchInString:text options:0 range:NSMakeRange(0, [text length])];
 			if (range.location!=NSNotFound){
@@ -61,7 +61,7 @@
 		}
 	
 		FOUND=1;
-		regex = [NSRegularExpression regularExpressionWithPattern:@"(?<!\\^)\\{([^\\}]+)\\}" options:nil error:nil];
+		regex = [NSRegularExpression regularExpressionWithPattern:@"(?<!\\^)\\{([^\\}]+)\\}" options:0 error:nil];
 		while (FOUND){
 			NSRange range = [regex rangeOfFirstMatchInString:text options:0 range:NSMakeRange(0, [text length])];
 			if (range.location!=NSNotFound){
@@ -96,7 +96,7 @@
  
 	while ([text rangeOfString:@"{union"].location!=NSNotFound){
         
-        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(\\{union.+?ficificifloc\\})" options:nil error:nil];
+        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(\\{union.+?ficificifloc\\})" options:0 error:nil];
 		[regex enumerateMatchesInString:text options:0 
                                   range:NSMakeRange(0, [text length]) 
                              usingBlock:^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) 
@@ -348,7 +348,7 @@ NSString * buildProtocolFile(Protocol *currentProtocol){
 			BOOL isRequiredMethod=acase<2 ? NO : YES;
 			BOOL isInstanceMethod=(acase==0 || acase==2) ? NO : YES;
 
-			objc_method_description *protMeths=protocol_copyMethodDescriptionList(currentProtocol, isRequiredMethod, isInstanceMethod, &protocolMethodsCount);
+			struct objc_method_description *protMeths=protocol_copyMethodDescriptionList(currentProtocol, isRequiredMethod, isInstanceMethod, &protocolMethodsCount);
 			for (unsigned gg=0; gg<protocolMethodsCount; gg++){
 				if (acase<2 && [protocolsMethodsString rangeOfString:@"@optional"].location==NSNotFound){
 					[protocolsMethodsString appendString:@"\n@optional\n"];
@@ -357,7 +357,7 @@ NSString * buildProtocolFile(Protocol *currentProtocol){
 					[protocolsMethodsString appendString:@"\n@required\n"];
 				}
 				NSString *startSign=isInstanceMethod==NO ? @"+" : @"-";
-				objc_method_description selectorsAndTypes=protMeths[gg];
+				struct objc_method_description selectorsAndTypes=protMeths[gg];
 				SEL selector=selectorsAndTypes.name;
 				char *types=selectorsAndTypes.types;
 				NSString *protSelector=NSStringFromSelector(selector);
@@ -574,7 +574,7 @@ static NSString *representedStructFromStruct(NSString *inStruct,NSString *inName
 
 			while ([types rangeOfString:@"b1"].location!=NSNotFound || [types rangeOfString:@"b2"].location!=NSNotFound || [types rangeOfString:@"b3"].location!=NSNotFound || [types rangeOfString:@"b4"].location!=NSNotFound || [types rangeOfString:@"b5"].location!=NSNotFound || [types rangeOfString:@"b6"].location!=NSNotFound || [types rangeOfString:@"b7"].location!=NSNotFound || [types rangeOfString:@"b8"].location!=NSNotFound || [types rangeOfString:@"b9"].location!=NSNotFound){
 
-			NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(b[0-9]+)" options:nil error:nil];
+			NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(b[0-9]+)" options:0 error:nil];
 				__block NSString *blParts3;
 				[regex enumerateMatchesInString:types options:0 
 							   range:NSMakeRange(0, [types length]) 
@@ -1084,7 +1084,7 @@ NSString * commonTypes(NSString *atype,NSString **inName,BOOL inIvarList){
 			__block NSMutableArray *numberOfArray=[NSMutableArray array];
 			while ([tempString rangeOfString:@"["].location!=NSNotFound){
 
-				NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(\\[([^\\[^\\]]+)\\])" options:nil error:nil];
+				NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(\\[([^\\[^\\]]+)\\])" options:0 error:nil];
 
         		[regex enumerateMatchesInString:tempString options:0 
             	                      range:NSMakeRange(0, [tempString length]) 
@@ -1354,5 +1354,3 @@ NSString * generateMethodLines(Class someclass,BOOL isInstanceMethod,NSMutableAr
 
 	return returnString;
 }   
-
-

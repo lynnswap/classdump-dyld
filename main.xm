@@ -10,14 +10,22 @@
  GNU General Public License for more details.
  */
 
-static BOOL inDebug=NO;
+ #import <Foundation/Foundation.h>
+
+ static BOOL inDebug=NO;
 static BOOL isIOS11=NO;
 
 #define CDLog(...) if (inDebug)NSLog(@"classdump-dyld : %@", [NSString stringWithFormat:__VA_ARGS__] )
 
 #include "CommonDefines.m"
 
-extern "C" int parseImage(char *image,BOOL writeToDisk,NSString *outputDir,BOOL getSymbols,BOOL isRecursive,BOOL buildOriginalDirs,BOOL simpleHeader,BOOL skipAlreadyFound,BOOL skipApplications,int percent);
+#ifdef __cplusplus
+extern "C" {
+#endif
+int parseImage(char *image,BOOL writeToDisk,NSString *outputDir,BOOL getSymbols,BOOL isRecursive,BOOL buildOriginalDirs,BOOL simpleHeader,BOOL skipAlreadyFound,BOOL skipApplications,int percent);
+#ifdef __cplusplus
+}
+#endif
 
 static void list_dir(const char *dir_name,BOOL writeToDisk,NSString *outputDir,BOOL getSymbols,BOOL recursive,BOOL simpleHeader,BOOL skipAlreadyFound,BOOL skipApplications);
 static NSMutableArray *allImagesProcessed;
@@ -193,7 +201,7 @@ static void list_dir(const char *dir_name,BOOL writeToDisk,NSString *outputDir,B
 
 /****** The actual job ******/
 
-extern "C" int parseImage(char *image,BOOL writeToDisk,NSString *outputDir,BOOL getSymbols,BOOL isRecursive,BOOL buildOriginalDirs,BOOL simpleHeader, BOOL skipAlreadyFound,BOOL skipApplications,int percent){
+int parseImage(char *image,BOOL writeToDisk,NSString *outputDir,BOOL getSymbols,BOOL isRecursive,BOOL buildOriginalDirs,BOOL simpleHeader, BOOL skipAlreadyFound,BOOL skipApplications,int percent){
     
     
     if (!image){
@@ -403,6 +411,28 @@ extern "C" int parseImage(char *image,BOOL writeToDisk,NSString *outputDir,BOOL 
     unsigned int count;
     CDLog(@"Getting class count for %s",image);
     const char **names = objc_copyClassNamesForImage(image,&count);
+    if (count == 0) {
+        NSString *imageString=[NSString stringWithCString:image encoding:NSUTF8StringEncoding];
+        NSString *lastComponent=[imageString lastPathComponent];
+        NSString *parentComponent=[[imageString stringByDeletingLastPathComponent] lastPathComponent];
+        NSString *frameworkSuffix=[NSString stringWithFormat:@"/%@/%@",parentComponent,lastComponent];
+        NSString *imageSuffix=[NSString stringWithFormat:@"/%@",lastComponent];
+        uint32_t imageCount=_dyld_image_count();
+        for (uint32_t i=0; i<imageCount; i++) {
+            const char *candidate=_dyld_get_image_name(i);
+            if (candidate==NULL){
+                continue;
+            }
+            NSString *candidateString=[NSString stringWithCString:candidate encoding:NSUTF8StringEncoding];
+            if ([candidateString hasSuffix:frameworkSuffix] || [candidateString hasSuffix:imageSuffix]){
+                names = objc_copyClassNamesForImage(candidate,&count);
+                if (count > 0) {
+                    image = (char *)candidate;
+                    break;
+                }
+            }
+        }
+    }
     CDLog(@"Did return class count %d",count);
     if (count){
         
@@ -1505,8 +1535,8 @@ int main(int argc, char **argv, char **envp) {
                 }
                 
                 NSMutableString *imageToNSString=[[NSMutableString alloc] initWithCString:imageInCache encoding:NSUTF8StringEncoding];
-                [imageToNSString replaceOccurrencesOfString:@"///" withString:@"/" options:nil range:NSMakeRange(0, [imageToNSString length])];
-                [imageToNSString replaceOccurrencesOfString:@"//" withString:@"/" options:nil range:NSMakeRange(0, [imageToNSString length])];
+                [imageToNSString replaceOccurrencesOfString:@"///" withString:@"/" options:0 range:NSMakeRange(0, [imageToNSString length])];
+                [imageToNSString replaceOccurrencesOfString:@"//" withString:@"/" options:0 range:NSMakeRange(0, [imageToNSString length])];
                 double prct=(double)((double)i/(double)_cacheHead->numlibs)*(double)100;
                 CDLog(@"Current Image %@",imageToNSString);
                 parseImage((char *)[imageToNSString UTF8String],writeToDisk,outputDir,getSymbols,YES,YES,simpleHeader,skipAlreadyFound,skipApplications,(int)prct);
@@ -1600,5 +1630,3 @@ int main(int argc, char **argv, char **envp) {
     exit(0);
     
 }
-
-
