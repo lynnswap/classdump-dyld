@@ -452,6 +452,56 @@ int parseImage(char *image,BOOL writeToDisk,NSString *outputDir,BOOL getSymbols,
                 }
             }
         }
+        if (count == 0) {
+            if (names != NULL){
+                free(names);
+                names = NULL;
+            }
+            // Fallback for images that report zero classes via objc_copyClassNamesForImage.
+            if (onlyOneClass){
+                Class onlyClass=objc_getClass([onlyOneClass UTF8String]);
+                if (onlyClass){
+                    const char *classImage=class_getImageName(onlyClass);
+                    if (classImage){
+                        NSString *classImageString=[NSString stringWithCString:classImage encoding:NSUTF8StringEncoding];
+                        if ([classImageString hasSuffix:frameworkSuffix] || [classImageString hasSuffix:imageSuffix]){
+                            names=(const char **)malloc(sizeof(char *));
+                            names[0]=class_getName(onlyClass);
+                            count=1;
+                        }
+                    }
+                }
+            }
+            if (count == 0){
+                int totalClasses=objc_getClassList(NULL,0);
+                if (totalClasses>0){
+                    Class *classes=(Class *)malloc(sizeof(Class)*totalClasses);
+                    int actualClasses=objc_getClassList(classes,totalClasses);
+                    if (actualClasses>0){
+                        const char **fallbackNames=(const char **)malloc(sizeof(char *)*actualClasses);
+                        unsigned int fallbackCount=0;
+                        for (int i=0; i<actualClasses; i++){
+                            const char *classImage=class_getImageName(classes[i]);
+                            if (!classImage){
+                                continue;
+                            }
+                            NSString *classImageString=[NSString stringWithCString:classImage encoding:NSUTF8StringEncoding];
+                            if ([classImageString hasSuffix:frameworkSuffix] || [classImageString hasSuffix:imageSuffix]){
+                                fallbackNames[fallbackCount++]=class_getName(classes[i]);
+                            }
+                        }
+                        if (fallbackCount>0){
+                            names=fallbackNames;
+                            count=fallbackCount;
+                        }
+                        else{
+                            free(fallbackNames);
+                        }
+                    }
+                    free(classes);
+                }
+            }
+        }
     }
     CDLog(@"Did return class count %d",count);
     if (count){
